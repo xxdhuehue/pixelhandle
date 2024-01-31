@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Zoom and anti-aliasing | Canvas pixel manipulation</title>
+    <style>
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .navigation {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+        }
+        #canvas {
+          cursor: zoom-in;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="navigation">
+          <a href="index.html">index</a>
+          <a href="colorPicker.html">colorPicker</a>
+          <a href="zooming.html">zoom out</a>
+          <a href="canvasVideo.html">video</a>
+      </div>
+    <table>
+			<thead>
+				<tr>
+					<th>Source</th>
+ 
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>
+						<canvas id="canvas" width="600" height="600"></canvas>
+					</td>
+					<td align="center">
+						<canvas id="pixelated-zoom" width="300" height="300"></canvas>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+    </div>
+		<script>
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = './images/flower.jpg';
+            img.onload = function() {
+              draw(this);
+            };
+
+            function draw(img) {
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const { left, top } = canvas.getBoundingClientRect()
+                const pixelatedZoomCtx = document.getElementById('pixelated-zoom').getContext('2d');
+                pixelatedZoomCtx.imageSmoothingEnabled = false;
+                pixelatedZoomCtx.mozImageSmoothingEnabled = false;
+                pixelatedZoomCtx.webkitImageSmoothingEnabled = false;
+                pixelatedZoomCtx.msImageSmoothingEnabled = false;
+                const zoom = (ctx, x, y) => {
+                  ctx.drawImage(
+                    canvas,
+                    Math.min(Math.max(0, x - 5), img.width - 10),
+                    Math.min(Math.max(0, y - 5), img.height - 10),
+                    10,
+                    10,
+                    0,
+                    0,
+                    500,
+                    500,
+                  );
+                };
+
+                canvas.addEventListener('mousemove', function(event) {
+                    const { layerX, layerY } = event;
+                    const x = layerX - left;
+                    const y = layerY - top;
+                    console.log(left, top , x, y, layerX, layerY )
+                    zoom(pixelatedZoomCtx, x, y);
+                });
+            }
+        </script>
+  </body>
+</html>

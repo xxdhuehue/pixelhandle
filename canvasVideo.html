@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      .container {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+      .navigation {
+          position: fixed;
+          top: 20px;
+          left: 20px;
+      }
+      .wrap {
+        display: flex;
+      }
+      .videos {
+        background-color: black;
+        margin-right: 20px;
+      }
+      .video {
+        margin: 20px 40px;
+      }
+      .button {
+        margin-top: 40px;
+        padding: 10px 0;
+        width: 400px;
+        cursor: pointer;
+      }
+      #cut {
+        margin-top: 10px;
+      }
+      #canvas {
+        background-image: url("./images/forest.jpg");
+      }
+      
+    </style>
+  </head>
+
+  <body>
+    <div class="navigation">
+      <a href="index.html">index</a>
+      <a href="colorPicker.html">colorPicker</a>
+      <a href="zooming.html">zoom out</a>
+      <a href="canvasVideo.html">video</a>
+    </div>
+    <div class="container">
+      <h1>Noah Film Studio</h1>
+      <div class="wrap">
+        <div class="videos">
+          <div class="video">
+            <video id="catVideo" width="150" height="85" loop src="videos/cat.mp4" controls="true"></video>
+          </div>
+          <div class="video">
+            <video id="dinosaurVideo" width="600" height="340" loop src="videos/dinosaur.mp4" controls="true"> </video>
+          </div>
+        </div>
+        <canvas id="canvas" width="600" height="650"  ></canvas>
+      </div>
+      <button class="button" id="action">Action</button>
+      <button class="button" id="cut">Cut</button>
+    </div>
+    
+    <div style="display: none;">
+      <canvas id="c1" width="300" height="170"></canvas>
+      <canvas id="c2"  width="600" height="340"></canvas>
+    </div>
+  </body>
+  <script>
+    const catVideo = document.querySelector("#catVideo");
+    const dinosaurVideo = document.querySelector('#dinosaurVideo');
+    const actionButton = document.querySelector("#action")
+    const cutButton = document.querySelector("#cut")
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    const c1 = document.getElementById("c1");
+    const ctx1 = this.c1.getContext("2d");
+    const c2 = document.getElementById("c2");
+    const ctx2 = this.c2.getContext("2d");
+    let catVideoHeight = 0;
+    let catVideoWidth = 0;
+  
+    function computeCatFrame() {
+      ctx1.drawImage(catVideo, 0, 0, 150, 85);
+      let frame = ctx1.getImageData(0, 0,  150, 85);
+      const data = frame.data;
+ 
+      for (let i = 0; i < data.length; i += 4) {
+        const red = data[i + 0];
+        const green = data[i + 1];
+        const blue = data[i + 2];
+        if (green > 180   && red < 200) {
+          data[i + 3] = 0;
+        }
+      }
+      context.putImageData(frame, 460, 570);
+       
+    }
+
+    function computeDinosaurFrame() {
+      ctx2.drawImage(dinosaurVideo, 0, 0, 600, 340);
+      let frame = ctx2.getImageData(0, 0,  600, 340);
+      const data = frame.data;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const red = data[i + 0];
+        const green = data[i + 1];
+        const blue = data[i + 2];
+        if (green > 148  ) {
+          data[i + 3] = 0;
+        }
+      }
+      context.putImageData(frame, -100, 300);
+    }
+
+    function catTimerCallback () {
+      if (catVideo.paused || catVideo.ended) {
+        return;
+      }
+      computeCatFrame();
+      setTimeout(function () {
+          self.catTimerCallback();
+        }, 300);
+    }
+
+    function dinosaurTimerCallback () {
+      if (dinosaurVideo.paused || dinosaurVideo.ended) {
+        return;
+      }
+      computeDinosaurFrame();
+      setTimeout(function () {
+          dinosaurTimerCallback();
+        }, 300);
+    }
+
+    actionButton.addEventListener('click', () => {
+      catVideo.play();
+      catTimerCallback();
+      dinosaurVideo.play();
+      dinosaurTimerCallback();
+    })
+
+    cutButton.addEventListener('click',() => {
+      catVideo.pause();
+      dinosaurVideo.pause();
+    })
+
+ 
+  </script>
+</html>

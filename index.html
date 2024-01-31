@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+        }
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .navigation {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+        }
+        .handlers {
+            margin-top: 40px;
+        }
+
+        .handlers button {
+            padding: 4px 8px;
+            margin: 0 8px;
+        }
+        
+
+    </style>
+</head>
+<body>
+   <div class="container">
+        <div class="navigation">
+            <a href="index.html">index</a>
+            <a href="colorPicker.html">colorPicker</a>
+            <a href="zooming.html">zoom out</a>
+            <a href="canvasVideo.html">video</a>
+        </div>
+        <div class="wrap">
+            <div id="box">
+                <canvas id="canvas" width="300" height="300"></canvas>
+            </div>
+            <div class="handlers">
+                <input type="file" id="uploadImage"  >
+                <button id="addRed">add Red</button>
+                <button id="addGreen">add Green</button>
+                <button id="addBlue">add Blue</button>
+                <button id="recover">recover</button>
+                <button id="save">download</button>
+            </div>
+        </div>
+   </div>
+    <script type="module">
+        import { gaussianBlur, traverse , downloadBase64Img } from './js/utils.js';
+        const box = document.querySelector("#box")
+        const uploadInput = document.querySelector("#uploadImage");
+        const turnGrey = document.querySelector("#turnGrey")
+        const addRedButton = document.querySelector("#addRed")
+        const addGreenButton = document.querySelector("#addGreen")
+        const addBlueButton = document.querySelector("#addBlue")
+        const saveButton = document.querySelector("#save");
+        const recoverButton = document.querySelector("#recover");
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const imageDataContext = new WeakMap();
+        let originalImageData = null;
+   
+        saveButton.addEventListener('click', () => {
+            const dataURL = canvas.toDataURL()
+            downloadBase64Img(dataURL);
+        })
+
+        addRedButton.addEventListener('click', (e) => {
+            const copyData = structuredClone(originalImageData);
+            traverse(copyData, ({r, g, b, a}) => {  
+                return [r * 1.6, g, b, a];
+            });
+            context.putImageData(copyData, 0, 0);
+        })
+
+        addGreenButton.addEventListener('click', (e) => {
+            const copyData = structuredClone(originalImageData);
+            traverse(copyData, ({r, g, b, a}) => {  
+                return [r, g*1.3, b, a];
+            });
+            context.putImageData(copyData, 0, 0);
+        })
+
+        addBlueButton.addEventListener('click', (e) => {
+            const copyData = structuredClone(originalImageData);
+            traverse(copyData, ({r, g, b, a}) => {  
+                return [r, g, b*1.3, a];
+            });
+            context.putImageData(copyData, 0, 0);
+        })
+
+        canvas.addEventListener('click', (e) => {
+            const {left, top} = canvas.getBoundingClientRect();
+            const { clientX, clientY } = e;
+            let x = clientX - left -20; let y = clientY - top -20 ;
+            const pixels =  context.getImageData(x, y, 40, 40);
+            const {data} = pixels
+            const blurData = gaussianBlur(data, 40, 40);
+            context.putImageData(pixels, x, y);
+        })
+
+        recoverButton.addEventListener('click', (e) => {
+            context.putImageData(originalImageData, 0, 0);
+        })
+
+        uploadInput.addEventListener('change', async (e) => {
+            const img = await loadImage(e.target.files[0]);
+            originalImageData = getImageData(img);
+            
+            const {width, height} = originalImageData;
+            canvas.width = width;
+            canvas.height = height;
+            context.putImageData(originalImageData, 0, 0);
+        })
+
+
+        turnGrey.addEventListener('click', () => {
+            const copyData = structuredClone(originalImageData);
+            traverse(copyData, ({r, g, b, a}) => {  
+                const v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                return [v,v,v, a];
+            });
+            canvas.width = copyData.width;
+            canvas.height = copyData.height;
+            context.putImageData(copyData, 0, 0);
+        })
+            
+   
+        function getImageData(img, rect = [0, 0, img.width, img.height]) {
+            let context;
+            if(imageDataContext.has(img)) context = imageDataContext.get(img);
+            else {
+                const canvas = new OffscreenCanvas(img.width, img.height);
+                context = canvas.getContext('2d');
+                context.drawImage(img, 0, 0);
+                imageDataContext.set(img, context);
+            }
+            return context.getImageData(...rect);
+        }
+
+        function loadImage(file) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            return new Promise((resolve) => {
+                img.onload = () => {
+                    resolve(img);
+                };
+                let reader = new FileReader();
+                    reader.readAsDataURL(file)
+                    reader.onload = function(e) {
+                        img.src = e.target.result;
+                    }
+            });
+        }
+    </script>
+</body>
+</html>
